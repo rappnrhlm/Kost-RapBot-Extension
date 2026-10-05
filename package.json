@@ -1,0 +1,17 @@
+{
+  "name": "kost-service",
+  "version": "1.0.0",
+  "description": "Standalone Bukittinggi Kos Service POC for RapBot Extension System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "sync:push": "rsync -avz -e 'ssh -p 77' ./data/ raffa@armbian:/home/raffa/Kost/data/",
+    "sync:pull": "rsync -avz -e 'ssh -p 77' raffa@armbian:/home/raffa/Kost/data/ ./data/"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^18.0.5",
+    "mysql2": "^3.24.5"
+  }
+}
