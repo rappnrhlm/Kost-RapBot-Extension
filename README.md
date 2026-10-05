@@ -45,9 +45,9 @@ cp .env.example .env
 PORT=3005
 DB_HOST=localhost
 DB_PORT=3306
-DB_USER=raffa
-DB_PASSWORD=your_password
-DB_NAME=RapDB
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
 ```
 
 ### 3. Start Service
