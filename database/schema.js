@@ -86,7 +86,9 @@ async function ensureKostTables() {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         `);
 
-        // Auto-seed if empty
+        // ----------------------------------------------------
+        // Auto-seed: If DB table is empty, seed from JSON file
+        // ----------------------------------------------------
         const [cntRows] = await db.query('SELECT COUNT(*) as cnt FROM kost');
         if (cntRows[0]?.cnt === 0 && fs.existsSync(KOST_FILE)) {
             const raw = fs.readFileSync(KOST_FILE, 'utf8');
@@ -100,6 +102,44 @@ async function ensureKostTables() {
                 );
             }
             console.log(`[Kost/Database] Auto-seeded ${fileKost.length} kost rows to MariaDB.`);
+        } else if (cntRows[0]?.cnt > 0) {
+            // ----------------------------------------------------
+            // Cache Sync: Dump MariaDB data to local JSON cache
+            // ----------------------------------------------------
+            const [rows] = await db.query('SELECT * FROM kost ORDER BY CAST(SUBSTRING(id, 5) AS UNSIGNED) ASC');
+            const mappedRows = rows.map(r => ({
+                id: r.id,
+                groupId: r.group_id || '',
+                name: r.name,
+                instagram: r.instagram || null,
+                tiktok: r.tiktok || null,
+                whatsapp: r.whatsapp || null,
+                status: r.status,
+                addedBy: r.added_by || null,
+                createdAt: r.created_at ? new Date(r.created_at).toISOString() : null,
+                sentBy: r.sent_by || null,
+                sentAt: r.sent_at ? new Date(r.sent_at).toISOString() : null
+            }));
+            fs.writeFileSync(KOST_FILE, JSON.stringify(mappedRows, null, 2));
+            console.log(`[Kost/Database] Synced ${mappedRows.length} rows from MariaDB to ${KOST_FILE}`);
+        }
+
+        // Sync Submissions cache as well
+        const [subRows] = await db.query('SELECT * FROM kost_submissions ORDER BY id ASC');
+        if (subRows.length > 0) {
+            const mappedSubRows = subRows.map(s => ({
+                id: s.id,
+                groupId: s.group_id || '',
+                name: s.name,
+                contactsRaw: s.contacts_raw,
+                submittedBy: s.submitted_by,
+                submittedAt: s.submitted_at ? new Date(s.submitted_at).toISOString() : null,
+                status: s.status,
+                reviewedBy: s.reviewed_by || null,
+                reviewedAt: s.reviewed_at ? new Date(s.reviewed_at).toISOString() : null,
+                createdAt: s.created_at ? new Date(s.created_at).toISOString() : null
+            }));
+            fs.writeFileSync(SUBMISSIONS_FILE, JSON.stringify(mappedSubRows, null, 2));
         }
     } catch (err) {
         console.warn('[Kost/Database] Warning initializing schema, using JSON fallback:', err.message);
